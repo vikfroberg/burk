@@ -16,7 +16,7 @@ export function Type(name, definitions) {
 
   return {
     ...constructors,
-    fold: curryN(2, (cases, x) => {
+    fold: curryN(2, function fold(cases, x) {
       const defKeys = Object.keys(definitions);
       const caseKeys = Object.keys(cases);
 
