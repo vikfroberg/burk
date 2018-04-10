@@ -1,4 +1,4 @@
-# uniontype
+# Burk
 Union types in JS
 
 Some similar packages are https://github.com/fantasyland/daggy and https://github.com/paldepind/union-type.
