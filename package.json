@@ -8,10 +8,12 @@
     "babel-cli": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
-    "browserify": "^16.1.1"
+    "browserify": "^16.1.1",
+    "watchify": "^3.11.0"
   },
   "scripts": {
-    "build": "babel src -d lib; browserify lib/example.js -o bundle/example.js"
+    "compile": "babel src -ws -d lib",
+    "bundle": "watchify lib/example.js -o bundle/example.js"
   },
   "author": "",
   "license": "MIT"
