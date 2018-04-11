@@ -1,5 +1,5 @@
 export function curryN(length, fn) {
-  function newFn(...args) {
+  function curryFn(...args) {
     if (args.length > length) {
       throw new Error("Too many arguments");
     } else if (args.length < length) {
@@ -10,9 +10,7 @@ export function curryN(length, fn) {
       return fn(...args);
     }
   }
-  newFn.name = fn.name;
-
-  return newFn;
+  return curryFn;
 }
 
 export function pipe(x, fns) {
