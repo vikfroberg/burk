@@ -82,7 +82,7 @@
   };
 
   function curryN(length, fn) {
-    function newFn() {
+    function curryFn() {
       for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
         args[_key] = arguments[_key];
       }
@@ -101,9 +101,7 @@
         return fn.apply(undefined, args);
       }
     }
-    newFn.name = fn.name;
-
-    return newFn;
+    return curryFn;
   }
 
   function pipe(x, fns) {
