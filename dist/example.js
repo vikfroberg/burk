@@ -1,7 +1,5 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', { value: true });
-
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
 } : function (obj) {
@@ -221,26 +219,6 @@ var notNull = function notNull(x) {
   }
 };
 
-var id = function id(x) {
-  return x;
-};
-
-var int = function int(x) {
-  if (Number(x) === x && x % 1 === 0) {
-    return x;
-  } else {
-    throw new TypeError(x + " is not an int");
-  }
-};
-
-var float = function float(x) {
-  if (Number(x) === x && x % 1 !== 0) {
-    return x;
-  } else {
-    throw new TypeError(x + " is not a float");
-  }
-};
-
 var string = function string(x) {
   if (typeof x !== "string") {
     throw new TypeError(x + " is not a string");
@@ -296,12 +274,68 @@ var piper = function piper() {
   };
 };
 
-exports.define = define;
-exports.id = id;
-exports.int = int;
-exports.float = float;
-exports.string = string;
-exports.object = object;
-exports.list = list;
-exports.pipe = pipe$1;
-exports.piper = piper;
+var MaybeOf = function MaybeOf(x) {
+  var Maybe = define("Maybe", {
+    Just: [x],
+    Nothing: []
+  });
+  Maybe.from = function (x) {
+    return x == null ? Maybe.Nothing : Maybe.Just(x);
+  };
+  Maybe.map = function (fn) {
+    return Maybe.fold({
+      Just: function Just(x) {
+        return Maybe.Just(fn(x));
+      },
+      Nothing: function Nothing() {
+        return Maybe.Nothing;
+      }
+    });
+  };
+  Maybe.withDefault = function (y) {
+    return Maybe.fold({
+      Just: function Just(x) {
+        return x;
+      },
+      Nothing: function Nothing() {
+        return y;
+      }
+    });
+  };
+  return Maybe;
+};
+
+var json1 = {
+  firstName: "Viktor",
+  lastName: "Fröberg",
+  nickNames: ["vik", "snow", "fröet"]
+};
+
+var json2 = {
+  firstName: "Viktor",
+  nickNames: []
+};
+
+var MaybeString = MaybeOf(string);
+
+var decoder = object({
+  firstName: string,
+  lastName: MaybeString.from,
+  nickNames: list(string)
+});
+
+var decoder2 = piper(object({
+  firstName: string,
+  lastName: MaybeString.from,
+  nickNames: list(string)
+}), function (result) {
+  return {
+    name: pipe$1(result.lastName, MaybeString.map(function (lastName) {
+      return result.firstName + " " + lastName;
+    }), MaybeString.withDefault(result.firstName))
+  };
+});
+
+console.log([decoder(json1), decoder(json2)]);
+console.log("---");
+console.log([decoder2(json1), decoder2(json2)]);

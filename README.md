@@ -9,15 +9,5 @@ We used both daggy and union-type at work and had problems with serializing the 
 ## Usage
 
 ```js
-const Maybe = Type("Maybe", {
-  Just: ["x"],
-  Nothing: [],
-});
-
-const justName = Maybe.Just("Viktor");
-
-Maybe.fold({
-  Just: x => console.log("Maybe.Just(" + x + ")"),
-  Nothing: () => console.log("Maybe.Nothing"),
-}, justName)
+Have a look inside `src/example.js`
 ```

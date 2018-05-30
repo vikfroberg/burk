@@ -4,6 +4,12 @@
   (factory((global.uniontype = {})));
 }(this, (function (exports) { 'use strict';
 
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+  };
+
   var defineProperty = function (obj, key, value) {
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -104,22 +110,26 @@
     return curryFn;
   }
 
-  function pipe(x, fns) {
-    return fns.reduce(function (acc, fn) {
-      return fn(acc);
-    }, x);
-  }
-
   function mapAsPairs(fn, x) {
-    return pipe(x, [toPairs, function (y) {
+    return pipe(x, toPairs, function (y) {
       return y.map(fn);
-    }, fromPairs]);
+    }, fromPairs);
   }
 
   function difference(xs, ys) {
     return xs.filter(function (x) {
       return !ys.includes(x);
     });
+  }
+
+  function pipe(x) {
+    for (var _len3 = arguments.length, fns = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+      fns[_key3 - 1] = arguments[_key3];
+    }
+
+    return fns.reduce(function (acc, fn) {
+      return fn(acc);
+    }, x);
   }
 
   function fromPairs(xs) {
@@ -138,13 +148,13 @@
     }, []);
   }
 
-  function Type(name, definitions) {
+  function define(name, definitions) {
     var constructors = mapAsPairs(function (_ref) {
       var _ref2 = slicedToArray(_ref, 2),
           kind = _ref2[0],
-          keys = _ref2[1];
+          guards = _ref2[1];
 
-      var fnOrObj = keys.length > 0 ? curryN(keys.length, function () {
+      var fnOrObj = guards.length > 0 ? curryN(guards.length, function () {
         for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
           args[_key] = arguments[_key];
         }
@@ -152,7 +162,9 @@
         return {
           name: name,
           kind: kind,
-          args: args
+          args: args.map(function (x, i) {
+            return guards[i](x);
+          })
         };
       }) : { name: name, kind: kind, args: [] };
 
@@ -187,7 +199,114 @@
     });
   }
 
-  exports.Type = Type;
+  var isObject = function isObject(x) {
+    if ((typeof x === "undefined" ? "undefined" : _typeof(x)) !== "object") {
+      throw new TypeError(x + " is not an object");
+    } else {
+      return x;
+    }
+  };
+
+  var isArray = function isArray(x) {
+    if (!Array.isArray(x)) {
+      throw new TypeError(x + " is not an array");
+    } else {
+      return x;
+    }
+  };
+
+  var notNull = function notNull(x) {
+    if (x == null) {
+      throw new TypeError(x + " can not be null");
+    } else {
+      return x;
+    }
+  };
+
+  var id = function id(x) {
+    return x;
+  };
+
+  var int = function int(x) {
+    if (Number(x) === x && x % 1 === 0) {
+      return x;
+    } else {
+      throw new TypeError(x + " is not an int");
+    }
+  };
+
+  var float = function float(x) {
+    if (Number(x) === x && x % 1 !== 0) {
+      return x;
+    } else {
+      throw new TypeError(x + " is not a float");
+    }
+  };
+
+  var string = function string(x) {
+    if (typeof x !== "string") {
+      throw new TypeError(x + " is not a string");
+    } else {
+      return x;
+    }
+  };
+
+  var object = function object(x) {
+    return function (y) {
+      var safeY = isObject(notNull(y));
+      var xKeys = Object.keys(x);
+      return xKeys.reduce(function (acc, key) {
+        try {
+          return _extends({}, acc, defineProperty({}, key, x[key](safeY[key])));
+        } catch (e) {
+          throw new TypeError("{ " + key + ": '" + e.message + "', ... }");
+        }
+      }, {});
+    };
+  };
+
+  var list = function list(x) {
+    return function (y) {
+      var safeY = isArray(notNull(y));
+      return safeY.reduce(function (acc, val) {
+        try {
+          return [].concat(toConsumableArray(acc), [x(val)]);
+        } catch (e) {
+          throw new TypeError("['" + e.message + "', ...]");
+        }
+      }, []);
+    };
+  };
+
+  var pipe$1 = function pipe(first) {
+    for (var _len2 = arguments.length, rest = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+      rest[_key2 - 1] = arguments[_key2];
+    }
+
+    return rest.reduce(function (acc, fn) {
+      return fn(acc);
+    }, first);
+  };
+
+  var piper = function piper() {
+    for (var _len3 = arguments.length, rest = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+      rest[_key3] = arguments[_key3];
+    }
+
+    return function (first) {
+      return pipe$1.apply(undefined, [first].concat(rest));
+    };
+  };
+
+  exports.define = define;
+  exports.id = id;
+  exports.int = int;
+  exports.float = float;
+  exports.string = string;
+  exports.object = object;
+  exports.list = list;
+  exports.pipe = pipe$1;
+  exports.piper = piper;
 
   Object.defineProperty(exports, '__esModule', { value: true });
 

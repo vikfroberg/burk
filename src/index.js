@@ -1,13 +1,13 @@
-import { length, difference, mapAsPairs, pipe, curryN } from "./helpers";
+import { length, difference, mapAsPairs, curryN } from "./helpers";
 
-export function Type(name, definitions) {
-  const constructors = mapAsPairs(([kind, keys]) => {
+export function define(name, definitions) {
+  const constructors = mapAsPairs(([kind, guards]) => {
     const fnOrObj =
-      keys.length > 0
-        ? curryN(keys.length, (...args) => ({
+      guards.length > 0
+        ? curryN(guards.length, (...args) => ({
             name,
             kind,
-            args,
+            args: args.map((x, i) => guards[i](x)),
           }))
         : { name, kind, args: [] };
 
@@ -50,3 +50,84 @@ export function Type(name, definitions) {
     }),
   };
 }
+
+const isObject = x => {
+  if (typeof x !== "object") {
+    throw new TypeError(x + " is not an object");
+  } else {
+    return x;
+  }
+};
+
+const isArray = x => {
+  if (!Array.isArray(x)) {
+    throw new TypeError(x + " is not an array");
+  } else {
+    return x;
+  }
+};
+
+const notNull = x => {
+  if (x == null) {
+    throw new TypeError(x + " can not be null");
+  } else {
+    return x;
+  }
+};
+
+export const id = x => x;
+
+export const int = x => {
+  if (Number(x) === x && x % 1 === 0) {
+    return x;
+  } else {
+    throw new TypeError(x + " is not an int");
+  }
+};
+
+export const float = x => {
+  if (Number(x) === x && x % 1 !== 0) {
+    return x;
+  } else {
+    throw new TypeError(x + " is not a float");
+  }
+};
+
+export const string = x => {
+  if (typeof x !== "string") {
+    throw new TypeError(x + " is not a string");
+  } else {
+    return x;
+  }
+};
+
+export const object = x => y => {
+  const safeY = isObject(notNull(y));
+  const xKeys = Object.keys(x);
+  return xKeys.reduce((acc, key) => {
+    try {
+      return { ...acc, [key]: x[key](safeY[key]) };
+    } catch (e) {
+      throw new TypeError("{ " + key + ": '" + e.message + "', ... }");
+    }
+  }, {});
+};
+
+export const list = x => y => {
+  const safeY = isArray(notNull(y));
+  return safeY.reduce((acc, val) => {
+    try {
+      return [...acc, x(val)];
+    } catch (e) {
+      throw new TypeError("['" + e.message + "', ...]");
+    }
+  }, []);
+};
+
+export const pipe = (first, ...rest) => {
+  return rest.reduce((acc, fn) => fn(acc), first);
+};
+
+export const piper = (...rest) => first => {
+  return pipe(first, ...rest);
+};

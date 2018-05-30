@@ -4,20 +4,25 @@
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
   "browser": "dist/index.umd.js",
+  "example": "dist/example.js",
   "dependencies": {},
   "devDependencies": {
     "babel-core": "^6.26.0",
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-stage-0": "^6.24.1",
+    "np": "^3.0.1",
     "rollup": "^0.57.1",
     "rollup-plugin-babel": "^3.0.3",
     "rollup-plugin-commonjs": "^9.1.0",
     "rollup-plugin-node-resolve": "^3.0.0"
   },
   "scripts": {
+    "publish": "np",
     "build": "rollup -c",
     "dev": "rollup -c -w"
   },
-  "files": ["dist"]
+  "files": [
+    "dist"
+  ]
 }

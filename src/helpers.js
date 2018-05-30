@@ -13,10 +13,6 @@ export function curryN(length, fn) {
   return curryFn;
 }
 
-export function pipe(x, fns) {
-  return fns.reduce((acc, fn) => fn(acc), x);
-}
-
 export function length(x) {
   return x.length;
 }
@@ -27,11 +23,15 @@ export function trace(x) {
 }
 
 export function mapAsPairs(fn, x) {
-  return pipe(x, [toPairs, y => y.map(fn), fromPairs]);
+  return pipe(x, toPairs, y => y.map(fn), fromPairs);
 }
 
 export function difference(xs, ys) {
   return xs.filter(x => !ys.includes(x));
+}
+
+function pipe(x, ...fns) {
+  return fns.reduce((acc, fn) => fn(acc), x);
 }
 
 function fromPairs(xs) {

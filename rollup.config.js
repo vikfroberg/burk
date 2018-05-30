@@ -31,4 +31,13 @@ export default [
       }),
     ],
   },
+  {
+    input: "src/example.js",
+    output: [{ file: pkg.example, format: "cjs" }],
+    plugins: [
+      babel({
+        exclude: ["node_modules/**"],
+      }),
+    ],
+  },
 ];
