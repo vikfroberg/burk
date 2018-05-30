@@ -1,8 +1,8 @@
 import * as T from "./index";
 
-const MaybeOf = x => {
-  const Maybe = T.define("Maybe", {
-    Just: [x],
+const MaybeOf = (name, guard) => {
+  const Maybe = T.define("Maybe:" + name, {
+    Just: [guard],
     Nothing: [],
   });
   Maybe.from = x => (x == null ? Maybe.Nothing : Maybe.Just(x));
@@ -30,7 +30,7 @@ const json2 = {
   nickNames: [],
 };
 
-const MaybeString = MaybeOf(T.string);
+const MaybeString = MaybeOf("String", T.string);
 
 const decoder = T.object({
   firstName: T.string,
@@ -42,7 +42,6 @@ const decoder2 = T.piper(
   T.object({
     firstName: T.string,
     lastName: MaybeString.from,
-    nickNames: T.list(T.string),
   }),
   result => ({
     name: T.pipe(
@@ -53,6 +52,18 @@ const decoder2 = T.piper(
   }),
 );
 
-console.log([decoder(json1), decoder(json2)]);
-console.log("---");
-console.log([decoder2(json1), decoder2(json2)]);
+// Test decoders
+console.log("untoched", [
+  T.toString(decoder(json1)),
+  T.toString(decoder(json2)),
+]);
+console.log("modified", [
+  T.toString(decoder2(json1)),
+  T.toString(decoder2(json2)),
+]);
+
+// Test nested types
+const MaybeMaybeString = MaybeOf("MaybeString", MaybeString.id);
+const justString = MaybeString.Just("Viktor");
+const justJustString = MaybeMaybeString.Just(justString);
+console.log("nested:", T.toString(justJustString));

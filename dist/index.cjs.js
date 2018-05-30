@@ -146,6 +146,26 @@ function toPairs(x) {
   }, []);
 }
 
+var toString = function toString(x) {
+  if (x.__burk) {
+    if (x.args.length) {
+      return x.name + "." + x.kind + "(" + x.args.map(toString).join(", ") + ")";
+    } else {
+      return x.name + "." + x.kind;
+    }
+  } else {
+    if (x != null && Array.isArray(x)) {
+      return x.map(toString);
+    } else if (x != null && (typeof x === "undefined" ? "undefined" : _typeof(x)) === "object") {
+      return Object.keys(x).reduce(function (acc, key) {
+        return _extends({}, acc, defineProperty({}, key, toString(x[key])));
+      }, {});
+    } else {
+      return x.toString();
+    }
+  }
+};
+
 function define(name, definitions) {
   var constructors = mapAsPairs(function (_ref) {
     var _ref2 = slicedToArray(_ref, 2),
@@ -158,18 +178,26 @@ function define(name, definitions) {
       }
 
       return {
+        __burk: true,
         name: name,
         kind: kind,
         args: args.map(function (x, i) {
           return guards[i](x);
         })
       };
-    }) : { name: name, kind: kind, args: [] };
+    }) : { __burk: true, name: name, kind: kind, args: [] };
 
     return [kind, fnOrObj];
   }, definitions);
 
   return _extends({}, constructors, {
+    id: function id(x) {
+      if (x.name === name) {
+        return x;
+      } else {
+        throw new TypeError(toString(x) + "is not of type " + name);
+      }
+    },
     fold: curryN(2, function fold(cases, x) {
       var defKeys = Object.keys(definitions);
       var caseKeys = Object.keys(cases);
@@ -198,7 +226,7 @@ function define(name, definitions) {
 }
 
 var isObject = function isObject(x) {
-  if ((typeof x === "undefined" ? "undefined" : _typeof(x)) !== "object") {
+  if (x == null || (typeof x === "undefined" ? "undefined" : _typeof(x)) !== "object") {
     throw new TypeError(x + " is not an object");
   } else {
     return x;
@@ -206,7 +234,7 @@ var isObject = function isObject(x) {
 };
 
 var isArray = function isArray(x) {
-  if (!Array.isArray(x)) {
+  if (x == null || !Array.isArray(x)) {
     throw new TypeError(x + " is not an array");
   } else {
     return x;
@@ -296,6 +324,7 @@ var piper = function piper() {
   };
 };
 
+exports.toString = toString;
 exports.define = define;
 exports.id = id;
 exports.int = int;

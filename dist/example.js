@@ -144,6 +144,26 @@ function toPairs(x) {
   }, []);
 }
 
+var toString = function toString(x) {
+  if (x.__burk) {
+    if (x.args.length) {
+      return x.name + "." + x.kind + "(" + x.args.map(toString).join(", ") + ")";
+    } else {
+      return x.name + "." + x.kind;
+    }
+  } else {
+    if (x != null && Array.isArray(x)) {
+      return x.map(toString);
+    } else if (x != null && (typeof x === "undefined" ? "undefined" : _typeof(x)) === "object") {
+      return Object.keys(x).reduce(function (acc, key) {
+        return _extends({}, acc, defineProperty({}, key, toString(x[key])));
+      }, {});
+    } else {
+      return x.toString();
+    }
+  }
+};
+
 function define(name, definitions) {
   var constructors = mapAsPairs(function (_ref) {
     var _ref2 = slicedToArray(_ref, 2),
@@ -156,18 +176,26 @@ function define(name, definitions) {
       }
 
       return {
+        __burk: true,
         name: name,
         kind: kind,
         args: args.map(function (x, i) {
           return guards[i](x);
         })
       };
-    }) : { name: name, kind: kind, args: [] };
+    }) : { __burk: true, name: name, kind: kind, args: [] };
 
     return [kind, fnOrObj];
   }, definitions);
 
   return _extends({}, constructors, {
+    id: function id(x) {
+      if (x.name === name) {
+        return x;
+      } else {
+        throw new TypeError(toString(x) + "is not of type " + name);
+      }
+    },
     fold: curryN(2, function fold(cases, x) {
       var defKeys = Object.keys(definitions);
       var caseKeys = Object.keys(cases);
@@ -196,7 +224,7 @@ function define(name, definitions) {
 }
 
 var isObject = function isObject(x) {
-  if ((typeof x === "undefined" ? "undefined" : _typeof(x)) !== "object") {
+  if (x == null || (typeof x === "undefined" ? "undefined" : _typeof(x)) !== "object") {
     throw new TypeError(x + " is not an object");
   } else {
     return x;
@@ -204,7 +232,7 @@ var isObject = function isObject(x) {
 };
 
 var isArray = function isArray(x) {
-  if (!Array.isArray(x)) {
+  if (x == null || !Array.isArray(x)) {
     throw new TypeError(x + " is not an array");
   } else {
     return x;
@@ -274,9 +302,9 @@ var piper = function piper() {
   };
 };
 
-var MaybeOf = function MaybeOf(x) {
-  var Maybe = define("Maybe", {
-    Just: [x],
+var MaybeOf = function MaybeOf(name, guard) {
+  var Maybe = define("Maybe:" + name, {
+    Just: [guard],
     Nothing: []
   });
   Maybe.from = function (x) {
@@ -316,7 +344,7 @@ var json2 = {
   nickNames: []
 };
 
-var MaybeString = MaybeOf(string);
+var MaybeString = MaybeOf("String", string);
 
 var decoder = object({
   firstName: string,
@@ -326,8 +354,7 @@ var decoder = object({
 
 var decoder2 = piper(object({
   firstName: string,
-  lastName: MaybeString.from,
-  nickNames: list(string)
+  lastName: MaybeString.from
 }), function (result) {
   return {
     name: pipe$1(result.lastName, MaybeString.map(function (lastName) {
@@ -336,6 +363,12 @@ var decoder2 = piper(object({
   };
 });
 
-console.log([decoder(json1), decoder(json2)]);
-console.log("---");
-console.log([decoder2(json1), decoder2(json2)]);
+// Test decoders
+console.log("untoched", [toString(decoder(json1)), toString(decoder(json2))]);
+console.log("modified", [toString(decoder2(json1)), toString(decoder2(json2))]);
+
+// Test nested types
+var MaybeMaybeString = MaybeOf("MaybeString", MaybeString.id);
+var justString = MaybeString.Just("Viktor");
+var justJustString = MaybeMaybeString.Just(justString);
+console.log("nested:", toString(justJustString));

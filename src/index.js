@@ -1,21 +1,49 @@
 import { length, difference, mapAsPairs, curryN } from "./helpers";
 
+export const toString = x => {
+  if (x.__burk) {
+    if (x.args.length) {
+      return `${x.name}.${x.kind}(${x.args.map(toString).join(", ")})`;
+    } else {
+      return `${x.name}.${x.kind}`;
+    }
+  } else {
+    if (x != null && Array.isArray(x)) {
+      return x.map(toString);
+    } else if (x != null && typeof x === "object") {
+      return Object.keys(x).reduce((acc, key) => {
+        return { ...acc, [key]: toString(x[key]) };
+      }, {});
+    } else {
+      return x.toString();
+    }
+  }
+};
+
 export function define(name, definitions) {
   const constructors = mapAsPairs(([kind, guards]) => {
     const fnOrObj =
       guards.length > 0
         ? curryN(guards.length, (...args) => ({
+            __burk: true,
             name,
             kind,
             args: args.map((x, i) => guards[i](x)),
           }))
-        : { name, kind, args: [] };
+        : { __burk: true, name, kind, args: [] };
 
     return [kind, fnOrObj];
   }, definitions);
 
   return {
     ...constructors,
+    id: x => {
+      if (x.name === name) {
+        return x;
+      } else {
+        throw new TypeError(toString(x) + "is not of type " + name);
+      }
+    },
     fold: curryN(2, function fold(cases, x) {
       const defKeys = Object.keys(definitions);
       const caseKeys = Object.keys(cases);
@@ -52,7 +80,7 @@ export function define(name, definitions) {
 }
 
 const isObject = x => {
-  if (typeof x !== "object") {
+  if (x == null || typeof x !== "object") {
     throw new TypeError(x + " is not an object");
   } else {
     return x;
@@ -60,7 +88,7 @@ const isObject = x => {
 };
 
 const isArray = x => {
-  if (!Array.isArray(x)) {
+  if (x == null || !Array.isArray(x)) {
     throw new TypeError(x + " is not an array");
   } else {
     return x;
