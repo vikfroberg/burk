@@ -1,3 +1,4 @@
+import "source-map-support/register";
 import * as T from "./index";
 
 const MaybeOf = (name, guard) => {
@@ -65,5 +66,12 @@ console.log("modified", [
 // Test nested types
 const MaybeMaybeString = MaybeOf("MaybeString", MaybeString.id);
 const justString = MaybeString.Just("Viktor");
-const justJustString = MaybeMaybeString.Just(justString);
-console.log("nested:", T.toString(justJustString));
+
+// test errors
+T.pipe(
+  MaybeString.Just("Viktor"),
+  MaybeString.fold({
+    Nothing: T.id,
+    // ...
+  }),
+);

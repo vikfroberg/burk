@@ -7,6 +7,7 @@ export default [
   {
     input: "src/index.js",
     output: {
+      sourcemap: "inline",
       file: pkg.browser,
       name: "uniontype",
       format: "umd",
@@ -22,8 +23,16 @@ export default [
   {
     input: "src/index.js",
     output: [
-      { file: pkg.main, format: "cjs" },
-      { file: pkg.module, format: "es" },
+      {
+        sourcemap: "inline",
+        file: pkg.main,
+        format: "cjs",
+      },
+      {
+        sourcemap: "inline",
+        file: pkg.module,
+        format: "es",
+      },
     ],
     plugins: [
       babel({
@@ -33,7 +42,14 @@ export default [
   },
   {
     input: "src/example.js",
-    output: [{ file: pkg.example, format: "cjs" }],
+    external: ["source-map-support/register"],
+    output: [
+      {
+        sourcemap: "inline",
+        file: pkg.example,
+        format: "cjs",
+      },
+    ],
     plugins: [
       babel({
         exclude: ["node_modules/**"],

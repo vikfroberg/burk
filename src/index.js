@@ -1,19 +1,25 @@
-import { length, difference, mapAsPairs, curryN } from "./helpers";
+import { difference, mapAsPairs, curryN } from "./helpers";
+import * as _Array from "./array";
+import * as _Object from "./object";
+
+export const is = x => x.__burk;
 
 export const toString = x => {
-  if (x.__burk) {
+  if (is(x)) {
     if (x.args.length) {
-      return `${x.name}.${x.kind}(${x.args.map(toString).join(", ")})`;
+      return `${x.name}.${x.kind}(${pipe(
+        x.args,
+        _Array.map(toString),
+        _Array.join(", "),
+      )})`;
     } else {
       return `${x.name}.${x.kind}`;
     }
   } else {
-    if (x != null && Array.isArray(x)) {
-      return x.map(toString);
-    } else if (x != null && typeof x === "object") {
-      return Object.keys(x).reduce((acc, key) => {
-        return { ...acc, [key]: toString(x[key]) };
-      }, {});
+    if (_Array.is(x)) {
+      return pipe(x, _Array.map(toString));
+    } else if (_Object.is(x)) {
+      return pipe(x, _Object.map(toString));
     } else {
       return x.toString();
     }
@@ -21,19 +27,24 @@ export const toString = x => {
 };
 
 export function define(name, definitions) {
-  const constructors = mapAsPairs(([kind, guards]) => {
-    const fnOrObj =
-      guards.length > 0
-        ? curryN(guards.length, (...args) => ({
-            __burk: true,
-            name,
-            kind,
-            args: args.map((x, i) => guards[i](x)),
-          }))
-        : { __burk: true, name, kind, args: [] };
-
-    return [kind, fnOrObj];
+  const constructors = _Object.mapKeyed((kind, guards) => {
+    return guards.length > 0
+      ? curryN(guards.length, (...args) => {
+          try {
+            return {
+              __burk: true,
+              name,
+              kind,
+              args: args.map((x, i) => guards[i](x)),
+            };
+          } catch (e) {
+            throw new TypeError(`${name}.${kind}(${e.message})`);
+          }
+        })
+      : { __burk: true, name, kind, args: [] };
   }, definitions);
+
+  const keysToString = xs => `{ ${xs.join(", ")} }`;
 
   return {
     ...constructors,
@@ -41,7 +52,7 @@ export function define(name, definitions) {
       if (x.name === name) {
         return x;
       } else {
-        throw new TypeError(toString(x) + "is not of type " + name);
+        throw new TypeError(toString(x) + " is not of type " + name);
       }
     },
     fold: curryN(2, function fold(cases, x) {
@@ -49,12 +60,14 @@ export function define(name, definitions) {
       const caseKeys = Object.keys(cases);
 
       if (name !== x.name) {
-        throw new Error(`'${name}.fold' received the wrong type`);
+        throw new TypeError(toString(x) + " is not of type " + name);
       } else if (caseKeys.includes("_")) {
         const unknownKeys = difference(caseKeys, [...defKeys, "_"]);
         if (unknownKeys.length > 0) {
-          throw new Error(
-            `'${name}.fold' contains unknown cases '${unknownKeys.join(", ")}'`,
+          throw new TypeError(
+            `${keysToString(caseKeys)} contains unknown cases ${keysToString(
+              unknownKeys,
+            )}`,
           );
         }
         return caseKeys.includes(x.kind)
@@ -63,14 +76,18 @@ export function define(name, definitions) {
       } else {
         const missingKeys = difference(defKeys, caseKeys);
         if (missingKeys.length > 0) {
-          throw new Error(
-            `'${name}.fold' is missing cases '${missingKeys.join(", ")}'`,
+          throw new TypeError(
+            `${keysToString(caseKeys)} is missing cases ${keysToString(
+              missingKeys,
+            )}`,
           );
         }
         const unknownKeys = difference(caseKeys, defKeys);
         if (unknownKeys.length > 0) {
-          throw new Error(
-            `'${name}.fold' contains unknown cases '${unknownKeys.join(", ")}'`,
+          throw new TypeError(
+            `${keysToString(caseKeys)} contains unknown cases ${keysToString(
+              unknownKeys,
+            )}`,
           );
         }
         return cases[x.kind](...x.args);
@@ -105,6 +122,7 @@ const notNull = x => {
 
 export const id = x => x;
 
+// TODO: typecast into int when string too
 export const int = x => {
   if (Number(x) === x && x % 1 === 0) {
     return x;
@@ -113,6 +131,7 @@ export const int = x => {
   }
 };
 
+// TODO: typecast into int when string too
 export const float = x => {
   if (Number(x) === x && x % 1 !== 0) {
     return x;

@@ -13,18 +13,9 @@ export function curryN(length, fn) {
   return curryFn;
 }
 
-export function length(x) {
-  return x.length;
-}
-
-export function trace(x) {
-  console.log(x);
-  return x;
-}
-
-export function mapAsPairs(fn, x) {
+export const mapAsPairs = curryN(2, (fn, x) => {
   return pipe(x, toPairs, y => y.map(fn), fromPairs);
-}
+});
 
 export function difference(xs, ys) {
   return xs.filter(x => !ys.includes(x));
@@ -45,3 +36,5 @@ function toPairs(x) {
 function all(fn, xs) {
   return xs.reduce((acc, x) => acc && fn(x));
 }
+
+// reduce, object keys, map
